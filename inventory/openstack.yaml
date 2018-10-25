@@ -1,0 +1,9 @@
+plugin: openstack
+cache: true
+cache_plugin: jsonfile
+cache_connection: /tmp/inventory_cache
+inventory_hostname: name
+expand_hostvars: true
+fail_on_errors: true
+clouds_yaml_path:
+- ~/.config/openstack/clouds.yaml

@@ -1,0 +1,8 @@
+volumes:
+#{% for v in lagoon_os_volumes.results %} Volume for machine {{v.ansible_facts.volumes[0].name}}
+- name: "{{v.ansible_facts.volumes[0].name}}"
+  devices: 
+#{% for d in v.ansible_facts.volumes[0].devices %} Volume {{loop.index}}
+  - device: /dev/disk/by-id/virtio-{{ d[:20] }}
+    volume: "{{ v.ansible_facts.volumes[0].volumes[loop.index - 1] }}"
+#{% endfor %}{% endfor %}

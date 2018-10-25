@@ -1,0 +1,80 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+  - name: Checkout roles
+    command: ansible-galaxy install -r requirements.yml
+
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  pre_tasks:
+  - name: Load configuration
+    include_role:
+      name: lagoon.configuration
+  tasks:
+  - name: Check parameters
+    block:
+    - set_fact:
+        required_vars:
+        - input_dir
+        - output_dir
+        - lagoon_configuration_params
+    - name: Check required parameters
+      fail: msg="Parameter '{{item}}' is not defined"
+      when: item not in vars
+      with_items: "{{required_vars}}"
+    - name: Check required parameters in Params
+      fail: msg="Parameter '{{item}}' is not defined in [ConnectionConfig] tag."
+      when: item not in lagoon_configuration_params.connectionConfig
+      with_items:
+      - provider
+      - machine_private_key
+      - machine_public_key
+
+  - block:
+    - name: Install Certificates
+      become: true
+      get_url:
+        url: "{{item}}"
+        dest: "/usr/local/share/ca-certificates/{{item|basename}}"
+        mode: 0640
+      with_items:
+      - "{{lagoon_configuration_params.openstack.cacert}}"
+    - name: Update Certificates
+      become: true
+      shell:
+        /usr/sbin/update-ca-certificates
+    - name: Update certificates
+      set_fact:
+        lagoon_os_cert:
+          cacert: /etc/ssl/certs/ca-certificates.crt
+    - name: Update config
+      set_fact:
+        lagoon_config_cert: "{{lagoon_configuration_params.openstack.config | combine(lagoon_os_cert, recursive=True)}}"
+    when:
+    - lagoon_configuration_params.openstack.cacert is defined
+
+  # Bug in openstack python
+  - set_fact:
+      lagoon_config_os: {}
+  - set_fact:
+      lagoon_config_os: "{{lagoon_config_os |combine({item.key: item.value})}}"
+    when:
+    - item.key not in ['identity_api_version']
+    with_dict: "{{lagoon_config_cert}}"
+
+  - include_role:
+      name: os-config
+
+  - name: Return params for Openstack
+    template:
+      src: "templates/output/{{item}}"
+      dest: "{{output_dir}}/{{item}}"
+    with_items:
+    - inventory.yaml
+
+
+  - name: Test Openstack configuration
+    os_project_facts:

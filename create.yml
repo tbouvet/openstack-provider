@@ -1,0 +1,51 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  pre_tasks:
+  - name: Load configuration
+    include_role:
+      name: lagoon.configuration
+  - name: Execute custom pre-tasks
+    include_tasks: "{{input_dir}}/{{lagoon_configuration_params.pre_tasks}}"
+    when: lagoon_configuration_params.pre_tasks is defined
+  tasks:
+  - set_fact:
+      lagoon_keypair_name: "{{lagoon_configuration_params.environment.name}}_{{lagoon_configuration_params.environment.uid}}"
+      lagoon_temp_dir: "tmp-{{lookup('pipe','date') | to_uuid}}"
+      lagoon_stack_name: "{{lagoon_configuration_params.environment.name}}"
+
+  - name: Create Infrastructure
+    block:
+    - name: Create temp dir
+      file:
+        path: "{{lagoon_temp_dir}}"
+        state: directory
+    - name: Create a new Openstack key pair
+      os_keypair:
+        name: "{{lagoon_keypair_name}}"
+        public_key: "{{ lookup('file', lagoon_configuration_params.connectionConfig.machine_public_key) }}"
+
+    - name: Provision a set of instances
+      include_tasks: tasks/instances.yml
+
+    - name: Provision volumes
+      include_tasks: tasks/volumes.yml
+      when: lagoon_configuration_params.volumes is defined
+
+    - name: Push outputs to engine
+      template:
+        src: "templates/output/{{item}}"
+        dest: "{{output_dir}}/{{item}}"
+      with_items:
+      - params.yaml
+      when: lagoon_configuration_params.volumes is defined
+
+    always:
+    - name: Purge temp dir
+      file:
+        path: "{{lagoon_temp_dir}}"
+        state: absent
+
+- name: Create Inventory
+  import_playbook: inventory.yml

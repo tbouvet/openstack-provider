@@ -1,0 +1,80 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  pre_tasks:
+  - name: Load configuration
+    include_role:
+      name: lagoon.configuration
+  tasks:
+  - meta: refresh_inventory
+
+  - name: Create inventory folder
+    file:
+      state: directory
+      path: "{{lagoon_inventory_path}}"
+
+  - name: Gather instances
+    os_server_facts:
+  - set_fact:
+      lagoon_instances: []
+      lagoon_workers: []
+  - name: Filter nodes
+    set_fact:
+      lagoon_instances: "{{ lagoon_instances + [ item ] }}"
+    with_items: "{{openstack_servers}}"
+    when:
+    - item.metadata.Stack_name is defined
+    - item.metadata.Stack_name == lagoon_configuration_params.environment.name
+    loop_control:
+      label: "{{ item.name }}"
+  - name: Gather Worker hosts
+    set_fact:
+      lagoon_workers: "{{ lagoon_workers + [ item ] }}"
+    with_items: "{{lagoon_instances}}"
+    when:
+    - item.metadata.Swarm_type is defined
+    - item.metadata.Swarm_type == 'worker'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: Update local inventory
+    template:
+      src: templates/hosts.j2
+      dest: "{{lagoon_inventory_path}}/hosts"
+
+  - name: Check IP configuration
+    set_fact:
+      lagoon_public_ip: "{{ lagoon_configuration_params.params.assign_public_ip | default(True) }}"
+      lagoon_ip: public_v4
+  - name: Fix IP
+    set_fact:
+      lagoon_ip: private_v4
+    when:
+    - lagoon_public_ip == False
+  - name: Add ssh configuration for each instance with proxy
+    include_role:
+      name: lagoon.ssh
+    vars:
+      lagoon_ssh_proxy: "{{lagoon_configuration_params.proxy.http_proxy}}"
+      lagoon_ssh_key: "{{ lagoon_configuration_params.connectionConfig.machine_private_key }}"
+      lagoon_ssh_host: "{{item[lagoon_ip]}}"
+    when:
+    - lagoon_configuration_params.proxy is defined
+    with_items:
+    - "{{ lagoon_instances }}"
+    loop_control:
+      label: "{{ item.name }}"
+  - name: Add ssh configuration for each instance without proxy
+    include_role:
+      name: lagoon.ssh
+    vars:
+      lagoon_ssh_proxy:
+      lagoon_ssh_key: "{{ lagoon_configuration_params.connectionConfig.machine_private_key }}"
+      lagoon_ssh_host: "{{item[lagoon_ip]}}"
+    when:
+    - lagoon_configuration_params.proxy is not defined
+    with_items:
+    - "{{ lagoon_instances }}"
+    loop_control:
+      label: "{{ item.name }}"

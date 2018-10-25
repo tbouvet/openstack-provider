@@ -1,0 +1,10 @@
+---
+# tasks file for os-config
+- name: Prepare Openstack configuration
+  file:
+    name: ~/.config/openstack/
+    state: directory
+- name: Deploy Openstack configuration
+  template:
+    src: templates/clouds.yaml
+    dest: ~/.config/openstack/clouds.yaml

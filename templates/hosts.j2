@@ -1,0 +1,15 @@
+# Declaring Swarm groups
+[managers]
+[workers]
+
+[managers:children]
+meta-Swarm_type_{{lagoon_configuration_params.environment.name }}_manager
+
+[workers:children]
+{% if lagoon_workers | length > 0 %}
+meta-Swarm_type_{{lagoon_configuration_params.environment.name }}_worker
+{% endif %}
+
+[nodes:children]
+managers
+workers

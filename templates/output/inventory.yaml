@@ -1,0 +1,4 @@
+---
+inventory_path: >
+  -i {{lagoon_configuration_params.component_path.openstack}}/inventory/modules
+  -i {{lagoon_inventory_path}}

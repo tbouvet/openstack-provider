@@ -1,0 +1,147 @@
+heat_template_version: 2016-04-08
+
+description: >
+  Node template to create a server.
+
+parameters:
+  index:
+    type: number
+    description: Number of the server
+  names:
+    type: comma_delimited_list
+    description: Names of the server
+  stack_name:
+    type: string
+    description: Name of the stack
+  key:
+    type: string
+    description: Name of keypair to assign to server
+  image:
+    type: string
+    description: Name of image to use for servers
+  flavor:
+    type: string
+    description: Flavor to use for server
+  private_network:
+    type: string
+    label: Private network name or ID
+    description: Network to attach instance to.
+  public_network:
+    type: string
+    label: Public network name or ID
+    description: Network to attach instance to.
+  dns_zone:
+    type: string
+    description: DNS zone for server
+  volumes:
+    type: json
+  volumes_count:
+    type: number
+
+
+resources:
+
+# {% if lagoon_configuration_params.params.public_network is defined %} Define Floating IP
+  floating_ip:
+    type: OS::Nova::FloatingIP
+    properties:
+      pool: { get_param: public_network }
+  association:
+    type: OS::Nova::FloatingIPAssociation
+    properties:
+      floating_ip: { get_resource: floating_ip }
+      server_id: { get_resource: instance }
+# {% endif %} 
+
+# {% if lagoon_configuration_params.params.dns_zone is defined %} Define DNS name
+  instancerecord:
+    type: OS::Designate::Record
+    properties:
+      name: { list_join: ['.', [{ get_attr: [instance, name] }, { get_param: dns_zone }]] }
+      data: { get_attr: [instance, first_address] }
+      description: { get_attr: [instance, name] }
+      domain: { get_param: dns_zone }
+      type: "A"
+# {% endif %}
+
+  group_of_volumes:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: volumes_count }
+      resource_def:
+        type: heat-volume.yaml
+        properties:
+          instance_id: { get_resource: instance }
+          instance_name: { get_attr: [instance, name]  }
+          volume_params: { get_param: volumes }
+          indexv: '%index%'
+
+# {% if lagoon_configuration_params.params.user_data is defined %} Define custom user script
+  user_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ungrouped
+      config: |
+        {{ lagoon_configuration_params.params.user_data | indent(8,false) }}
+# {% endif %}
+            
+  default_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ungrouped
+      config: |
+        #!/bin/bash
+        echo "---------- Installation terminated with success ---------------"
+
+  server_init:
+    type: OS::Heat::MultipartMime
+    properties:
+      parts:
+      - config: {get_resource: default_config}
+# {% if lagoon_configuration_params.params.user_data is defined %} Define user config
+      - config: {get_resource: user_config}
+# {% endif %}
+
+  instance:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key }
+      networks:
+        - network: { get_param: private_network }
+      user_data_format: SOFTWARE_CONFIG
+      user_data: {get_resource: server_init}
+      metadata:
+        {{ lagoon_os_metadata | to_nice_yaml | indent(8,false) }}
+# {% if lagoon_configuration_params.params.availability_zone is defined %} Define availability_zone
+      availability_zone : {{lagoon_configuration_params.params.availability_zone }}
+# {% endif %}
+# {% if lagoon_os_machine_names is defined %} Define custom name
+      name:
+        str_replace:
+          template: ${NAME}
+          params:
+            ${NAME}: { get_param: [ names , get_param: index ] }
+# {% else %} DEfine default name
+      name:
+        str_replace:
+          template: ${STACK}-${INDEX}
+          params:
+            ${INDEX}: { get_param: index }
+            ${STACK}: { get_param: stack_name }
+# {% endif %}
+# {% if lagoon_configuration_params.params.security_groups is defined %} Define security groups
+      security_groups: 
+# {% for sec in lagoon_configuration_params.params.security_groups %} User secgroup
+      - {{ sec}}
+# {% endfor %}{% endif %}
+
+outputs:
+  server_id:
+    value: {get_attr: [instance, name]}
+  volumes_to_mount:
+    value: {get_attr: [group_of_volumes, volume_id]}
+  volumes_name:
+    value: {get_attr: [group_of_volumes, volume_name]}
+      
