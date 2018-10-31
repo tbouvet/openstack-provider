@@ -1,56 +1,61 @@
 ---
 - name: Set Stack name
   set_fact:
-    lagoon_stack_meta:
-      Stack_name: "{{lagoon_stack_name}}"
+    ekara_stack_meta:
+      Stack_name: "{{ekara_stack_name}}"
+      Stack_id: "{{ekara_configuration_params.environment.uid}}"
 - name: Add metadata
   set_fact:
-    lagoon_os_metadata: "{{ lagoon_configuration_params.params.metadata | default({})| combine(lagoon_stack_meta) }}"
+    ekara_os_metadata: "{{ ekara_configuration_params.params.metadata | default({})| combine(ekara_stack_meta) }}"
+
+- name: Define default machines names
+  set_fact:
+    ekara_prefix_names: "{{ekara_configuration_params.params.prefix_names | default(ekara_stack_full_name)}}"
+  when:
+  - ekara_os_machine_names is not defined
 
 - name: Generate template to create instances
   template:
     src: "templates/heats/{{item}}"
-    dest: "{{lagoon_temp_dir}}/{{item}}"
+    dest: "{{ekara_temp_dir}}/{{item}}"
   with_items:
   - heat-stack.yaml
   - heat-server.yaml
   - heat-volume.yaml
 
 - name: Create stack
-  register: lagoon_os_stack
+  register: ekara_os_stack
   os_stack:
-    name: "{{lagoon_configuration_params.environment.name}}_{{lagoon_configuration_params.environment.uid}}"
+    name: "{{ekara_stack_full_name}}"
     state: present
-    template: "{{lagoon_temp_dir}}/heat-stack.yaml"
+    template: "{{ekara_temp_dir}}/heat-stack.yaml"
     parameters:
-      names: "{{lagoon_os_machine_names | default({})}}"
-      node_count: "{{lagoon_configuration_params.instances}}"
-      key: "{{ lagoon_keypair_name }}"
-      image: "{{ lagoon_configuration_params.params.image }}"
-      flavor: "{{ lagoon_configuration_params.params.flavor }}"
-      private_network: "{{ lagoon_configuration_params.params.private_network }}"
-      public_network: "{{ lagoon_configuration_params.params.public_network | default('')}}"
-      availability_zone: "{{ lagoon_configuration_params.params.availability_zone | default('') }}"
-      dns_zone: "{{lagoon_configuration_params.params.dns_zone | default('')}}"
-      volumes: "{{lagoon_configuration_params.volumes | default({}) | to_json }}"
-      volumes_count: "{{lagoon_configuration_params.volumes | default({}) | length }}"
+      names: "{{ekara_os_machine_names | default([])}}"
+      node_count: "{{ekara_configuration_params.instances}}"
+      key: "{{ ekara_keypair_name }}"
+      image: "{{ ekara_configuration_params.params.image }}"
+      flavor: "{{ ekara_configuration_params.params.flavor }}"
+      private_network: "{{ ekara_configuration_params.params.private_network }}"
+      public_network: "{{ ekara_configuration_params.params.public_network | default('')}}"
+      dns_zone: "{{ekara_configuration_params.params.dns_zone | default('')}}"
+      volumes: "{{ekara_configuration_params.volumes | default({}) | to_json }}"
+      volumes_count: "{{ekara_configuration_params.volumes | default({}) | length }}"
 
 - block:
   - name: Estimate Swarm managers count
     set_fact:
-      lagoon_managers: >
-        {% set ns = namespace(managers=1) %}{% for x in range(1,([9,lagoon_configuration_params.instances+1]|min)) %}
+      ekara_managers: >
+        {% set ns = namespace(managers=1) %}{% for x in range(1,([9,ekara_configuration_params.instances+1]|min)) %}
         {%if x % 2 == 1%}{% set ns.managers = x %}{%endif%}{%endfor%}{{ns.managers}}
-
   - name: Add swarm tag on instance
     os_server_metadata:
       state: present
       name: "{{item}}"
       meta:
-        Swarm_type: "{{lagoon_configuration_params.environment.name}}_{{swarm_type}}"
+        Swarm_type: "{{ekara_configuration_params.environment.name}}_{{swarm_type}}"
     vars:
-      swarm_type: "{% if index_manager < lagoon_managers %}manager{%else%}worker{%endif%}"
-    loop: "{{ lagoon_os_stack.stack.outputs[0].output_value }}"
+      swarm_type: "{% if index_manager < ekara_managers %}manager{%else%}worker{%endif%}"
+    loop: "{{ ekara_os_stack.stack.outputs[0].output_value }}"
     loop_control:
       index_var: index_manager
       label: "{{item}} - {{swarm_type}}"

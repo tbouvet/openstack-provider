@@ -1,8 +1,8 @@
 ---
-- src: https://github.com/lagoon-platform/ansible-role-configuration.git
-  version: alpha1
-  name: lagoon.configuration
+- src: https://github.com/tbouvet/ansible-role-configuration.git
+  version: ekara
+  name: ekara.configuration
 
-- src: https://github.com/lagoon-platform/ansible-role-ssh-config.git
-  version: alpha2
-  name: lagoon.ssh
+- src: https://github.com/tbouvet/ansible-role-ssh-config.git
+  version: ekara
+  name: ekara.ssh

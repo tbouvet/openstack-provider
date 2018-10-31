@@ -41,7 +41,7 @@ parameters:
 
 resources:
 
-# {% if lagoon_configuration_params.params.public_network is defined %} Define Floating IP
+# {% if ekara_configuration_params.params.public_network is defined %} Define Floating IP
   floating_ip:
     type: OS::Nova::FloatingIP
     properties:
@@ -53,7 +53,7 @@ resources:
       server_id: { get_resource: instance }
 # {% endif %} 
 
-# {% if lagoon_configuration_params.params.dns_zone is defined %} Define DNS name
+# {% if ekara_configuration_params.params.dns_zone is defined %} Define DNS name
   instancerecord:
     type: OS::Designate::Record
     properties:
@@ -76,13 +76,13 @@ resources:
           volume_params: { get_param: volumes }
           indexv: '%index%'
 
-# {% if lagoon_configuration_params.params.user_data is defined %} Define custom user script
+# {% if ekara_configuration_params.params.user_data is defined %} Define custom user script
   user_config:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
       config: |
-        {{ lagoon_configuration_params.params.user_data | indent(8,false) }}
+        {{ ekara_configuration_params.params.user_data | indent(8,false) }}
 # {% endif %}
             
   default_config:
@@ -98,7 +98,7 @@ resources:
     properties:
       parts:
       - config: {get_resource: default_config}
-# {% if lagoon_configuration_params.params.user_data is defined %} Define user config
+# {% if ekara_configuration_params.params.user_data is defined %} Define user config
       - config: {get_resource: user_config}
 # {% endif %}
 
@@ -113,11 +113,11 @@ resources:
       user_data_format: SOFTWARE_CONFIG
       user_data: {get_resource: server_init}
       metadata:
-        {{ lagoon_os_metadata | to_nice_yaml | indent(8,false) }}
-# {% if lagoon_configuration_params.params.availability_zone is defined %} Define availability_zone
-      availability_zone : {{lagoon_configuration_params.params.availability_zone }}
+        {{ ekara_os_metadata | to_nice_yaml | indent(8,false) }}
+# {% if ekara_configuration_params.params.availability_zone is defined %} Define availability_zone
+      availability_zone : {{ekara_configuration_params.params.availability_zone }}
 # {% endif %}
-# {% if lagoon_os_machine_names is defined %} Define custom name
+# {% if ekara_os_machine_names is defined %} Define custom name
       name:
         str_replace:
           template: ${NAME}
@@ -126,21 +126,23 @@ resources:
 # {% else %} DEfine default name
       name:
         str_replace:
-          template: ${STACK}-${INDEX}
+          template: ${PREFIX}-${INDEX}
           params:
             ${INDEX}: { get_param: index }
-            ${STACK}: { get_param: stack_name }
+            ${PREFIX}: {{ekara_prefix_names}}
 # {% endif %}
-# {% if lagoon_configuration_params.params.security_groups is defined %} Define security groups
+# {% if ekara_configuration_params.params.security_groups is defined %} Define security groups
       security_groups: 
-# {% for sec in lagoon_configuration_params.params.security_groups %} User secgroup
+# {% for sec in ekara_configuration_params.params.security_groups %} User secgroup
       - {{ sec}}
 # {% endfor %}{% endif %}
 
 outputs:
   server_id:
+    value: {get_resource: instance}
+  server_name:
     value: {get_attr: [instance, name]}
-  volumes_to_mount:
+  volumes_id:
     value: {get_attr: [group_of_volumes, volume_id]}
   volumes_name:
     value: {get_attr: [group_of_volumes, volume_name]}

@@ -5,33 +5,34 @@
   pre_tasks:
   - name: Load configuration
     include_role:
-      name: lagoon.configuration
+      name: ekara.configuration
   - name: Execute custom pre-tasks
-    include_tasks: "{{input_dir}}/{{lagoon_configuration_params.pre_tasks}}"
-    when: lagoon_configuration_params.pre_tasks is defined
+    include_tasks: "{{input_dir}}/{{ekara_configuration_params.params.pre_tasks}}"
+    when: ekara_configuration_params.params.pre_tasks is defined
   tasks:
   - set_fact:
-      lagoon_keypair_name: "{{lagoon_configuration_params.environment.name}}_{{lagoon_configuration_params.environment.uid}}"
-      lagoon_temp_dir: "tmp-{{lookup('pipe','date') | to_uuid}}"
-      lagoon_stack_name: "{{lagoon_configuration_params.environment.name}}"
+      ekara_keypair_name: "{{ekara_configuration_params.environment.name}}_{{ekara_configuration_params.environment.uid}}"
+      ekara_temp_dir: "tmp-{{lookup('pipe','date') | to_uuid}}"
+      ekara_stack_name: "{{ekara_configuration_params.environment.name}}"
+      ekara_stack_full_name: "{{ekara_configuration_params.environment.name}}_{{ekara_configuration_params.environment.uid}}"
 
   - name: Create Infrastructure
     block:
     - name: Create temp dir
       file:
-        path: "{{lagoon_temp_dir}}"
+        path: "{{ekara_temp_dir}}"
         state: directory
     - name: Create a new Openstack key pair
       os_keypair:
-        name: "{{lagoon_keypair_name}}"
-        public_key: "{{ lookup('file', lagoon_configuration_params.connectionConfig.machine_public_key) }}"
+        name: "{{ekara_keypair_name}}"
+        public_key: "{{ lookup('file', ekara_configuration_params.connectionConfig.machine_public_key) }}"
 
     - name: Provision a set of instances
       include_tasks: tasks/instances.yml
 
     - name: Provision volumes
       include_tasks: tasks/volumes.yml
-      when: lagoon_configuration_params.volumes is defined
+      when: ekara_configuration_params.volumes is defined
 
     - name: Push outputs to engine
       template:
@@ -39,12 +40,12 @@
         dest: "{{output_dir}}/{{item}}"
       with_items:
       - params.yaml
-      when: lagoon_configuration_params.volumes is defined
+      when: ekara_configuration_params.volumes is defined
 
     always:
     - name: Purge temp dir
       file:
-        path: "{{lagoon_temp_dir}}"
+        path: "{{ekara_temp_dir}}"
         state: absent
 
 - name: Create Inventory

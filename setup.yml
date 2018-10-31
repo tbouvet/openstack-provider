@@ -12,7 +12,7 @@
   pre_tasks:
   - name: Load configuration
     include_role:
-      name: lagoon.configuration
+      name: ekara.configuration
   tasks:
   - name: Check parameters
     block:
@@ -20,14 +20,14 @@
         required_vars:
         - input_dir
         - output_dir
-        - lagoon_configuration_params
+        - ekara_configuration_params
     - name: Check required parameters
       fail: msg="Parameter '{{item}}' is not defined"
       when: item not in vars
       with_items: "{{required_vars}}"
     - name: Check required parameters in Params
       fail: msg="Parameter '{{item}}' is not defined in [ConnectionConfig] tag."
-      when: item not in lagoon_configuration_params.connectionConfig
+      when: item not in ekara_configuration_params.connectionConfig
       with_items:
       - provider
       - machine_private_key
@@ -41,29 +41,29 @@
         dest: "/usr/local/share/ca-certificates/{{item|basename}}"
         mode: 0640
       with_items:
-      - "{{lagoon_configuration_params.openstack.cacert}}"
+      - "{{ekara_configuration_params.params.cacert}}"
     - name: Update Certificates
       become: true
       shell:
         /usr/sbin/update-ca-certificates
     - name: Update certificates
       set_fact:
-        lagoon_os_cert:
+        ekara_os_cert:
           cacert: /etc/ssl/certs/ca-certificates.crt
     - name: Update config
       set_fact:
-        lagoon_config_cert: "{{lagoon_configuration_params.openstack.config | combine(lagoon_os_cert, recursive=True)}}"
+        ekara_config_cert: "{{ekara_configuration_params.params.config | combine(ekara_os_cert, recursive=True)}}"
     when:
-    - lagoon_configuration_params.openstack.cacert is defined
+    - ekara_configuration_params.params.cacert is defined
 
   # Bug in openstack python
   - set_fact:
-      lagoon_config_os: {}
+      ekara_config_os: {}
   - set_fact:
-      lagoon_config_os: "{{lagoon_config_os |combine({item.key: item.value})}}"
+      ekara_config_os: "{{ekara_config_os |combine({item.key: item.value})}}"
     when:
     - item.key not in ['identity_api_version']
-    with_dict: "{{lagoon_config_cert}}"
+    with_dict: "{{ekara_config_cert}}"
 
   - include_role:
       name: os-config
@@ -76,5 +76,5 @@
     - inventory.yaml
 
 
-  - name: Test Openstack configuration
-    os_project_facts:
+#  - name: Test Openstack configuration
+#    os_project_facts:

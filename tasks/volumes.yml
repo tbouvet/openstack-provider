@@ -2,10 +2,10 @@
 - name: List volumes
   set_fact:
     volumes:
-    - name: "{{ lagoon_os_stack.stack.outputs[0].output_value[my_idx] }}"
-      volumes: "{{ lagoon_os_stack.stack.outputs[1].output_value[my_idx]}}"
-      devices: "{{ lagoon_os_stack.stack.outputs[2].output_value[my_idx] }}"
-  loop: "{{ lagoon_os_stack.stack.outputs[0].output_value}}"
+    - name: "{{ ekara_os_stack.stack.outputs[1].output_value[my_idx] }}"
+      volumes: "{{ ekara_os_stack.stack.outputs[3].output_value[my_idx]}}"
+      devices: "{{ ekara_os_stack.stack.outputs[2].output_value[my_idx] }}"
+  loop: "{{ ekara_os_stack.stack.outputs[1].output_value}}"
   loop_control:
     index_var: my_idx
-  register: lagoon_os_volumes
+  register: ekara_os_volumes

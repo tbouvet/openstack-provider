@@ -19,10 +19,6 @@ parameters:
   flavor:
     type: string
     description: Flavor to use for server
-  availability_zone:
-    type: string
-    description: Availability zone for server
-    default: nova
   private_network:
     type: string
     label: Private network name or ID
@@ -64,7 +60,9 @@ resources:
 outputs:
   server_ids:
     value: {get_attr: [servers, server_id]}
-  volumes_to_mount:
-    value: {get_attr: [servers, volumes_to_mount]}
-  volumes_name:
+  server_names:
+    value: {get_attr: [servers, server_name]}
+  volumes_ids:
+    value: {get_attr: [servers, volumes_id]}
+  volumes_names:
     value: {get_attr: [servers, volumes_name]}

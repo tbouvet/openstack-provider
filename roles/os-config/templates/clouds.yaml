@@ -1,4 +1,4 @@
 # {{ ansible_managed }}
 clouds:
   default:
-{{lagoon_config_os | to_nice_yaml | indent(4,true)}}
+    {{ekara_config_os | to_nice_yaml | indent(4,false)}}

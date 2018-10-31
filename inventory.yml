@@ -5,33 +5,33 @@
   pre_tasks:
   - name: Load configuration
     include_role:
-      name: lagoon.configuration
+      name: ekara.configuration
   tasks:
   - meta: refresh_inventory
 
   - name: Create inventory folder
     file:
       state: directory
-      path: "{{lagoon_inventory_path}}"
+      path: "{{ekara_inventory_path}}"
 
   - name: Gather instances
     os_server_facts:
   - set_fact:
-      lagoon_instances: []
-      lagoon_workers: []
+      ekara_instances: []
+      ekara_workers: []
   - name: Filter nodes
     set_fact:
-      lagoon_instances: "{{ lagoon_instances + [ item ] }}"
+      ekara_instances: "{{ ekara_instances + [ item ] }}"
     with_items: "{{openstack_servers}}"
     when:
-    - item.metadata.Stack_name is defined
-    - item.metadata.Stack_name == lagoon_configuration_params.environment.name
+    - item.metadata.Stack_id is defined
+    - item.metadata.Stack_id == ekara_configuration_params.environment.uid
     loop_control:
       label: "{{ item.name }}"
   - name: Gather Worker hosts
     set_fact:
-      lagoon_workers: "{{ lagoon_workers + [ item ] }}"
-    with_items: "{{lagoon_instances}}"
+      ekara_workers: "{{ ekara_workers + [ item ] }}"
+    with_items: "{{ekara_instances}}"
     when:
     - item.metadata.Swarm_type is defined
     - item.metadata.Swarm_type == 'worker'
@@ -41,40 +41,40 @@
   - name: Update local inventory
     template:
       src: templates/hosts.j2
-      dest: "{{lagoon_inventory_path}}/hosts"
+      dest: "{{ekara_inventory_path}}/hosts"
 
   - name: Check IP configuration
     set_fact:
-      lagoon_public_ip: "{{ lagoon_configuration_params.params.assign_public_ip | default(True) }}"
-      lagoon_ip: public_v4
+      ekara_public_ip: "{{ ekara_configuration_params.params.assign_public_ip | default(True) }}"
+      ekara_ip: public_v4
   - name: Fix IP
     set_fact:
-      lagoon_ip: private_v4
+      ekara_ip: private_v4
     when:
-    - lagoon_public_ip == False
+    - ekara_public_ip == False
   - name: Add ssh configuration for each instance with proxy
     include_role:
-      name: lagoon.ssh
+      name: ekara.ssh
     vars:
-      lagoon_ssh_proxy: "{{lagoon_configuration_params.proxy.http_proxy}}"
-      lagoon_ssh_key: "{{ lagoon_configuration_params.connectionConfig.machine_private_key }}"
-      lagoon_ssh_host: "{{item[lagoon_ip]}}"
+      ekara_ssh_proxy: "{{ekara_configuration_params.proxy.http_proxy}}"
+      ekara_ssh_key: "{{ ekara_configuration_params.connectionConfig.machine_private_key }}"
+      ekara_ssh_host: "{{item[ekara_ip]}}"
     when:
-    - lagoon_configuration_params.proxy is defined
+    - ekara_configuration_params.proxy is defined
     with_items:
-    - "{{ lagoon_instances }}"
+    - "{{ ekara_instances }}"
     loop_control:
       label: "{{ item.name }}"
   - name: Add ssh configuration for each instance without proxy
     include_role:
-      name: lagoon.ssh
+      name: ekara.ssh
     vars:
-      lagoon_ssh_proxy:
-      lagoon_ssh_key: "{{ lagoon_configuration_params.connectionConfig.machine_private_key }}"
-      lagoon_ssh_host: "{{item[lagoon_ip]}}"
+      ekara_ssh_proxy:
+      ekara_ssh_key: "{{ ekara_configuration_params.connectionConfig.machine_private_key }}"
+      ekara_ssh_host: "{{item[ekara_ip]}}"
     when:
-    - lagoon_configuration_params.proxy is not defined
+    - ekara_configuration_params.proxy is not defined
     with_items:
-    - "{{ lagoon_instances }}"
+    - "{{ ekara_instances }}"
     loop_control:
       label: "{{ item.name }}"

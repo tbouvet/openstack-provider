@@ -1,4 +1,4 @@
 ---
 inventory_path: >
-  -i {{lagoon_configuration_params.component_path.openstack}}/inventory/modules
-  -i {{lagoon_inventory_path}}
+  -i {{ekara_configuration_params.component_path[ekara_configuration_params.connectionConfig.provider]}}/inventory
+  -i {{ekara_inventory_path}}

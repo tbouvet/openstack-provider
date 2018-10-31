@@ -1,5 +1,5 @@
 volumes:
-#{% for v in lagoon_os_volumes.results %} Volume for machine {{v.ansible_facts.volumes[0].name}}
+#{% for v in ekara_os_volumes.results %} Volume for machine {{v.ansible_facts.volumes[0].name}}
 - name: "{{v.ansible_facts.volumes[0].name}}"
   devices: 
 #{% for d in v.ansible_facts.volumes[0].devices %} Volume {{loop.index}}

@@ -1,2 +1,2 @@
 ---
-lagoon_inventory_path: "/opt/lagoon/inventory/openstack"
+ekara_inventory_path: "/opt/ekara/inventory/openstack"
