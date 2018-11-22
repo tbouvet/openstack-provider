@@ -1,0 +1,61 @@
+---
+- name: Gather instances
+  os_server_facts:
+- name: Filter nodes
+  set_fact:
+    ekara_instances_plf: "{{ (ekara_instances_plf|default([])) + [ item ] }}"
+  with_items: "{{openstack_servers}}"
+  when:
+  - item.metadata['ek.stack_id'] is defined
+  - item.metadata['ek.stack_name'] == ekara_configuration_params.environment.name
+  - item.metadata['ek.stack_qualifier'] == ekara_configuration_params.environment.qualifier
+  loop_control:
+    label: "{{ item.name }}"
+- set_fact:
+    ekara_instances: "{{ekara_instances_plf|length|int}}"
+- name: Gather instances (managers)
+  set_fact:
+    ekara_instances_managers: "{{ (ekara_instances_managers|default([])) + [ item ] }}"
+  with_items: "{{openstack_servers}}"
+  when:
+  - item.metadata['ek.swarm_type'] is defined
+  - item.metadata['ek.swarm_type'] == (ekara_plf+'_manager')
+  loop_control:
+    label: "{{ item.name }}"
+- set_fact:
+    ekara_instances_managers: "{{(ekara_instances_managers|default([]))|length|int}}"
+- debug:
+    msg: "{{ekara_instances_managers|int}} manager(s) already exist"
+- name: Estimate Swarm managers count
+  set_fact:
+    ekara_managers: >
+      {% set ns = namespace(managers=1) %}{% for x in range(1,([5,(ekara_instances|int)]|min)+1) %}
+      {%if x % 2 == 1%}{% set ns.managers = x %}{%endif%}{%endfor%}{{ns.managers}}
+- name: Check managers to create
+  set_fact:
+    ekara_manager_tocreate: "{{ ekara_managers|int - ekara_instances_managers|int }}"
+- debug:
+    msg: "Add {{ekara_manager_tocreate|int}} managers"
+
+- name: Get new instances to tag
+  set_fact:
+    ekara_new_instances: "{{ (ekara_new_instances|default([])) + [item] }}"
+  loop: "{{ ekara_instances_plf }}"
+  loop_control:
+    index_var: index
+    label: "{{item.id}}"
+  when:
+  - ekara_instances_plf[index].metadata['ek.swarm_type'] is not defined
+
+- name: Add swarm tag on new instances
+  os_server_metadata:
+    state: present
+    name: "{{item.id}}"
+    meta:
+      ek.swarm_type: "{{ekara_plf}}_{{swarm_type}}"
+  vars:
+    swarm_type: "{% if index_manager < ekara_manager_tocreate|int %}manager{%else%}worker{%endif%}"
+  loop: "{{ekara_new_instances}}"
+  loop_control:
+    index_var: index_manager
+    label: "{{item.id}} - {{item.metadata['ek.swarm_type']|default(swarm_type)}}"

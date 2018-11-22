@@ -3,11 +3,11 @@
 [workers]
 
 [managers:children]
-meta-Swarm_type_{{ekara_configuration_params.environment.name }}_manager
+meta-ek.swarm_type_{{ ekara_plf }}_manager
 
 [workers:children]
 {% if ekara_workers | length > 0 %}
-meta-Swarm_type_{{ekara_configuration_params.environment.name }}_worker
+meta-ek.swarm_type_{{ ekara_plf }}_worker
 {% endif %}
 
 [nodes:children]

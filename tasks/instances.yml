@@ -2,15 +2,22 @@
 - name: Set Stack name
   set_fact:
     ekara_stack_meta:
-      Stack_name: "{{ekara_stack_name}}"
-      Stack_id: "{{ekara_configuration_params.environment.uid}}"
-- name: Add metadata
+      ek.stack_name: "{{ekara_stack_name}}"
+      ek.stack_id: "{{ekara_configuration_params.environment.id}}"
+      ek.stack_qualifier: "{{ekara_configuration_params.environment.qualifier}}"
+      ek.stack_nodeset: "{{ekara_configuration_params.environment.nodeset}}"
+- name: Prepare metadata
   set_fact:
     ekara_os_metadata: "{{ ekara_configuration_params.params.metadata | default({})| combine(ekara_stack_meta) }}"
+- name: Add labels into metadata
+  set_fact:
+    ekara_os_metadata: "{{ ekara_os_metadata | combine(ekara_configuration_params.labels) }}"
+  when:
+  - ekara_configuration_params.labels is defined
 
 - name: Define default machines names
   set_fact:
-    ekara_prefix_names: "{{ekara_configuration_params.params.prefix_names | default(ekara_stack_full_name)}}"
+    ekara_prefix_names: "{{ekara_configuration_params.params.prefix_names | default(ekara_stack_id)}}"
   when:
   - ekara_os_machine_names is not defined
 
@@ -26,7 +33,7 @@
 - name: Create stack
   register: ekara_os_stack
   os_stack:
-    name: "{{ekara_stack_full_name}}"
+    name: "{{ekara_stack_id}}"
     state: present
     template: "{{ekara_temp_dir}}/heat-stack.yaml"
     parameters:
@@ -41,21 +48,5 @@
       volumes: "{{ekara_configuration_params.volumes | default({}) | to_json }}"
       volumes_count: "{{ekara_configuration_params.volumes | default({}) | length }}"
 
-- block:
-  - name: Estimate Swarm managers count
-    set_fact:
-      ekara_managers: >
-        {% set ns = namespace(managers=1) %}{% for x in range(1,([9,ekara_configuration_params.instances+1]|min)) %}
-        {%if x % 2 == 1%}{% set ns.managers = x %}{%endif%}{%endfor%}{{ns.managers}}
-  - name: Add swarm tag on instance
-    os_server_metadata:
-      state: present
-      name: "{{item}}"
-      meta:
-        Swarm_type: "{{ekara_configuration_params.environment.name}}_{{swarm_type}}"
-    vars:
-      swarm_type: "{% if index_manager < ekara_managers %}manager{%else%}worker{%endif%}"
-    loop: "{{ ekara_os_stack.stack.outputs[0].output_value }}"
-    loop_control:
-      index_var: index_manager
-      label: "{{item}} - {{swarm_type}}"
+- name: Add Swarms tags
+  include_tasks: "tag-swarm.yml"

@@ -19,13 +19,15 @@
   - set_fact:
       ekara_instances: []
       ekara_workers: []
+      ekara_plf: "{{ekara_configuration_params.environment.name}}_{{ekara_configuration_params.environment.qualifier}}"
   - name: Filter nodes
     set_fact:
       ekara_instances: "{{ ekara_instances + [ item ] }}"
     with_items: "{{openstack_servers}}"
     when:
-    - item.metadata.Stack_id is defined
-    - item.metadata.Stack_id == ekara_configuration_params.environment.uid
+    - item.metadata['ek.stack_id'] is defined
+    - item.metadata['ek.stack_name'] == ekara_configuration_params.environment.name
+    - item.metadata['ek.stack_qualifier'] == ekara_configuration_params.environment.qualifier
     loop_control:
       label: "{{ item.name }}"
   - name: Gather Worker hosts
@@ -33,8 +35,8 @@
       ekara_workers: "{{ ekara_workers + [ item ] }}"
     with_items: "{{ekara_instances}}"
     when:
-    - item.metadata.Swarm_type is defined
-    - item.metadata.Swarm_type == 'worker'
+    - item.metadata['ek.swarm_type'] is defined
+    - item.metadata['ek.swarm_type'] == (ekara_plf+'_worker')
     loop_control:
       label: "{{ item.name }}"
 
@@ -42,6 +44,10 @@
     template:
       src: templates/hosts.j2
       dest: "{{ekara_inventory_path}}/hosts"
+  - name: Update nodeset inventory
+    template:
+      src: templates/hosts-nodeset.j2
+      dest: "{{ekara_inventory_path}}/hosts-{{ekara_configuration_params.environment.nodeset}}"
 
   - name: Check IP configuration
     set_fact:

@@ -11,10 +11,11 @@
     when: ekara_configuration_params.params.pre_tasks is defined
   tasks:
   - set_fact:
-      ekara_keypair_name: "{{ekara_configuration_params.environment.name}}_{{ekara_configuration_params.environment.uid}}"
+      ekara_keypair_name: "{{ekara_configuration_params.environment.name}}_{{ekara_configuration_params.environment.qualifier}}"
       ekara_temp_dir: "tmp-{{lookup('pipe','date') | to_uuid}}"
       ekara_stack_name: "{{ekara_configuration_params.environment.name}}"
-      ekara_stack_full_name: "{{ekara_configuration_params.environment.name}}_{{ekara_configuration_params.environment.uid}}"
+      ekara_stack_id: "{{ekara_configuration_params.environment.id}}"
+      ekara_plf: "{{ekara_configuration_params.environment.name}}_{{ekara_configuration_params.environment.qualifier}}"
 
   - name: Create Infrastructure
     block:

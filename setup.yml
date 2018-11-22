@@ -64,6 +64,8 @@
     when:
     - item.key not in ['identity_api_version']
     with_dict: "{{ekara_config_cert}}"
+    loop_control:
+      label: "{{item.key}}"
 
   - include_role:
       name: os-config
