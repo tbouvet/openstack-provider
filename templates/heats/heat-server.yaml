@@ -64,17 +64,12 @@ resources:
       type: "A"
 # {% endif %}
 
+
   group_of_volumes:
-    type: OS::Heat::ResourceGroup
+    type: heat-volume.yaml
     properties:
-      count: { get_param: volumes_count }
-      resource_def:
-        type: heat-volume.yaml
-        properties:
-          instance_id: { get_resource: instance }
-          instance_name: { get_attr: [instance, name]  }
-          volume_params: { get_param: volumes }
-          indexv: '%index%'
+      instance_id: { get_resource: instance }
+      instance_name: { get_attr: [instance, name]  }
 
 # {% if ekara_configuration_params.params.user_data is defined %} Define custom user script
   user_config:

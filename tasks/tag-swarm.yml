@@ -59,3 +59,5 @@
   loop_control:
     index_var: index_manager
     label: "{{item.id}} - {{item.metadata['ek.swarm_type']|default(swarm_type)}}"
+  when:
+  - ekara_new_instances is defined

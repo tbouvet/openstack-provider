@@ -4,12 +4,6 @@ description: >
   Node template to create a volumes for a server.
   
 parameters:
-  indexv:
-    type: number
-    
-  volume_params:
-    type: json
-    
   instance_id:
     type: string
     description: Server to attach volume to
@@ -18,34 +12,38 @@ parameters:
     description: Server name
 
 resources:
-  volume:
+
+# {% if ekara_configuration_params.volumes is defined %} Create volumes
+# {% for v in ekara_configuration_params.volumes %} Volume {{v.path}}
+  volume{{v.path|replace('/','_')}}:
     type: OS::Cinder::Volume
     properties:
-      size: {  get_param: [ volume_params , {get_param: indexv} , "params" , "volume_size" ] }
-      volume_type: {  get_param: [ volume_params , {get_param: indexv} , "params" , "volume_type" ] }
+      size: {{v.params.volume_size}}
+      volume_type: {{v.params.volume_type}}
       description:
         str_replace:
-          template: Volume for stack ${INSTANCE} - ${NAME}
+          template: ${INSTANCE} ${NAME}
           params:
             ${INSTANCE}: { get_param: "instance_name" }
-            ${NAME}: {  get_param: [ volume_params , {get_param: indexv} , "name" ] }
-      name:
-        str_replace:
-          template: ${INSTANCE}-${INDEX}
-          params:
-            ${INSTANCE}: { get_param: "instance_name" }
-            ${NAME}: {  get_param: [ volume_params , {get_param: indexv} , "name" ] }
-            ${INDEX}: { get_param: indexv }
+            ${NAME}: "{{v.path}}"
 
-  volume_attachment:
+  volume_attachment{{v.path|replace('/','_')}}:
     type: OS::Cinder::VolumeAttachment
     properties:
-      volume_id: { get_resource: volume }
+      volume_id: { get_resource: "volume{{v.path|replace('/','_')}}" }
       instance_uuid: { get_param: instance_id }
+# {% endfor %}{% endif %}
 
 outputs:
-  volume_id:
-    value: {get_resource: volume_attachment}
-  volume_name:
-    value: { get_param: [ volume_params , {get_param: indexv} , "name" ] }
+  volume_id: 
+    value: 
+# {% for v in ekara_configuration_params.volumes %} Volume id
+    - {get_resource: "volume_attachment{{v.path|replace('/','_')}}"}
+# {% endfor %}
+
+  volume_name: 
+    value: 
+# {% for v in ekara_configuration_params.volumes %} Volume Path
+    - {{v.path}}
+# {% endfor %}
     

@@ -33,7 +33,9 @@
 
     - name: Provision volumes
       include_tasks: tasks/volumes.yml
-      when: ekara_configuration_params.volumes is defined
+      when:
+      - ekara_configuration_params.volumes is defined
+      - ekara_configuration_params.volumes|length > 0
 
     - name: Push outputs to engine
       template:
@@ -41,7 +43,9 @@
         dest: "{{output_dir}}/{{item}}"
       with_items:
       - params.yaml
-      when: ekara_configuration_params.volumes is defined
+      when:
+      - ekara_configuration_params.volumes is defined
+      - ekara_configuration_params.volumes|length > 0
 
     always:
     - name: Purge temp dir
