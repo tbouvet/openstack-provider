@@ -84,3 +84,10 @@
     - "{{ ekara_instances }}"
     loop_control:
       label: "{{ item.name }}"
+
+  - name: Push machines configuration to engine
+    template:
+      src: "templates/output/{{item}}"
+      dest: "{{output_dir}}/{{item}}"
+    with_items:
+    - machines.yaml

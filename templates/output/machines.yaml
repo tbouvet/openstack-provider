@@ -1,0 +1,13 @@
+---
+ekara_machines:
+#{% for i in ekara_instances %} Machine {{loop.index}}
+- name: {{ i.name | default(i.public_v4,True)}}
+  id: {{ i.id }}
+#{% for a in i.addresses %}{% for p in i.addresses[a] %}{% if p['OS-EXT-IPS:type'] == 'fixed' %} 
+  private_ip: {{ p.addr }}
+#{% endif %}{% endfor %}{% endfor %}
+
+  public_ip: {{ i.public_v4 | default('')}}
+  provider_vars:
+    {{ i | to_nice_yaml | indent(4,false) }}
+#{% endfor %}
