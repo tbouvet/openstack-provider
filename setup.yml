@@ -88,14 +88,10 @@
       apk:
         name: python2-dev,gcc,libc-dev,linux-headers
         state: absent
-      
+
   - name: Return params for Openstack
     template:
       src: "templates/output/{{item}}"
       dest: "{{output_dir}}/{{item}}"
     with_items:
     - inventory.yaml
-
-
-#  - name: Test Openstack configuration
-#    os_project_facts:
