@@ -70,6 +70,25 @@
   - include_role:
       name: os-config
 
+  - block:
+    - name: Prepare Openstack installation
+      become: true
+      apk:
+        name: python2-dev,gcc,libc-dev,linux-headers
+        state: present
+    - name: Install Openstack modules
+      become: true
+      pip:
+        name:
+        - openstacksdk==0.20.0
+        - shade
+        state: present
+    - name: Remove temporary modules
+      become: true
+      apk:
+        name: python2-dev,gcc,libc-dev,linux-headers
+        state: absent
+      
   - name: Return params for Openstack
     template:
       src: "templates/output/{{item}}"
