@@ -4,8 +4,8 @@ To create a new __Openstack stack__, run the playbook `create.yml`
 		
 This playbook needs 2 parameters:
 
-- **input_dir**: folder which contains yaml files with EC2 parameters
-- **output_dir**: folder which contains yaml files with EC2 parameters
+- **input_dir**: folder which contains yaml files with Openstack parameters
+- **output_dir**: folder which contains yaml files with Openstack parameters
 
 
 > If **proxy** is needed to connect to AWS, export **proxy** parameters in environment variables (http\_proxy, https\_proxy, no\_proxy).
