@@ -75,6 +75,7 @@ All variables which can be overridden as in table below (under **params** tag).
 | `dns_zone` |  |  | Dns zone to use to create a Designate Record|
 | `metadata` |  |  | Metadata for each instance |
 | `user_data` |  |  | User config for each instance |
+| `prefix_names` |  |  | Prefix name for each instance |
 
 
 ## Openstack parameters for Volumes (Cinder)
