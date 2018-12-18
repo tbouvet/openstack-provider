@@ -8,6 +8,8 @@ ekara_machines:
 #{% endif %}{% endfor %}{% endfor %}
 
   public_ip: {{ i.public_v4 | default('')}}
+  labels:
+    {{ i.metadata | to_nice_yaml | indent(4,false) }}
   provider_vars:
     {{ i | to_nice_yaml | indent(4,false) }}
 #{% endfor %}
