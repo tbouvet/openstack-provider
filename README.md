@@ -82,7 +82,7 @@ All variables which can be overridden as in table below (under **params** tag).
 
 | Name           | Required | Default Value | Description                        |
 | -------------- | -------- | ------------- | -----------------------------------|
-| `name` |  True |   | Mount point's name |
+| `path` |  True |   | Mount point's name |
 | `params/volume_type` |  True |  | Volume type |
 | `params/volume_size` |  True |  | Volume size |
 
