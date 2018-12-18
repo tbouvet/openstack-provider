@@ -8,7 +8,7 @@ This playbook needs 2 parameters:
 - **output_dir**: folder which contains yaml files with Openstack parameters
 
 
-> If **proxy** is needed to connect to AWS, export **proxy** parameters in environment variables (http\_proxy, https\_proxy, no\_proxy).
+> If **proxy** is needed to connect to Openstack, export **proxy** parameters in environment variables (http\_proxy, https\_proxy, no\_proxy).
 
 
 __Example__:
